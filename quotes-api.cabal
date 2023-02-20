@@ -59,7 +59,7 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  MyLib
+    exposed-modules:  KOReader
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -68,7 +68,12 @@ library
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.16.3.0
+    build-depends:    base ^>=4.16.3.0,
+                      text,
+                      aeson,
+                      deriving-aeson,
+                      bytestring,
+                      unordered-containers,
     -- Directories containing source files.
     hs-source-dirs:   lib
 

@@ -1,19 +1,14 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveGeneric #-}
 module Main where
 
-import Data.Text (Text(..))
+import Data.Text (Text)
 import Data.Aeson
-import qualified MyLib (someFunc)
 import Database.SQLite.Simple
-import Database.SQLite.Simple.FromRow (FromRow)
-import Database.SQLite.Simple.FromField (fromField)
 import Database.SQLite.Simple.QQ
-import Network.Wai
 import Network.Wai.Handler.Warp
 import Deriving.Aeson
 import Data.Proxy
@@ -23,7 +18,10 @@ import Control.Monad.IO.Class
 
 data Quote = Quote { qQuote :: Text
                    , qAuthor :: Text
-                   , qBook :: Text
+                   , qTitle :: Text
+                   -- , qPage :: Text
+                   -- , qChapter :: Text
+                   -- , qTime :: UnixTime
                    } deriving (Show, Eq, Ord, Generic)
                      deriving (FromJSON,ToJSON)
                        via CustomJSON '[OmitNothingFields, FieldLabelModifier '[StripPrefix "q", CamelToSnake]] Quote
