@@ -3,17 +3,27 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-module KOReader where
+module Parsers.KOReader
+( KoHighlight(..)
+, parse
+)
+where
 
 import Deriving.Aeson
 import Data.Aeson
-import Data.Text
+import Data.Text hiding (concatMap)
+import Data.Maybe (fromMaybe)
+
+import Api.Types (Quote(..))
 
 showT :: Show a => a -> Text
 showT = pack . show
 
 newtype KoPage = KoPage Text
-  deriving (Show, Eq, Generic)
+  deriving (Eq, Generic)
+
+instance Show KoPage where
+  show (KoPage a) = Data.Text.unpack a
 
 instance FromJSON KoPage where
   parseJSON (Number s) = pure (KoPage $ showT $ round s)
@@ -49,3 +59,22 @@ data KoEntry = KoEntry { koeChapter :: Maybe Text
                   deriving (Show, Eq, Generic)
                   deriving (FromJSON, ToJSON)
                     via CustomJSON '[OmitNothingFields, FieldLabelModifier '[StripPrefix "koe", CamelToSnake]] KoEntry
+
+parse :: KoHighlight -> [Quote]
+parse khl = concatMap parseDocument (khlDocuments khl)
+
+parseDocument :: KoDocument -> [Quote]
+parseDocument kd = (parseEntry title author) <$> (kodEntries kd)
+  where
+    title = kodTitle kd
+    author = kodAuthor kd
+
+parseEntry :: Text -> Maybe Text -> KoEntry -> Quote
+parseEntry title author ke = Quote { qQuote = koeText ke
+                      , qAuthor = fromMaybe "" author
+                      , qTitle = title
+                      , qPage = showT $ koePage ke
+                      , qChapter = koeChapter ke
+                      , qCreatedOn = koeTime ke
+                      }
+

@@ -59,7 +59,8 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  KOReader
+    exposed-modules:  Api.Types,
+                      Parsers.KOReader
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -74,6 +75,7 @@ library
                       deriving-aeson,
                       bytestring,
                       unordered-containers,
+                      sqlite-simple,
     -- Directories containing source files.
     hs-source-dirs:   lib
 
