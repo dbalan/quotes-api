@@ -3,26 +3,49 @@
 {-# LANGUAGE TypeOperators #-}
 module Main where
 
-import Database.SQLite.Simple
+import Database.SQLite.Simple hiding ((:.))
 import Database.SQLite.Simple.QQ
 import Network.Wai.Handler.Warp
 import Data.Proxy
 import Servant
 import Control.Monad.IO.Class
 import Servant.HTML.Blaze
+import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8)
+import Crypto.Argon2
+import Data.Text.Short (fromText, ShortText)
+import Data.ByteString (ByteString)
 
 import Api.Types
 import qualified Parsers.KOReader as KO
 import Config
 import Options.Applicative
 
+data User = User
+  { username :: T.Text
+  , password :: ByteString
+  } deriving (Show, Eq)
+
 type API = Get '[HTML] Quote
          :<|> "quotes" :> Get '[JSON] [Quote]
          :<|> "quote" :> "random" :> Get '[JSON] Quote
          :<|> "today" :> Get '[HTML] Quote
-         :<|> "koreader" :> ReqBody '[JSON] KO.KoHighlight :> Post '[JSON] NoContent
+         :<|> BasicAuth "update data" User :> ("koreader" :> ReqBody '[JSON] KO.KoHighlight :> Post '[JSON] NoContent)
+
 api :: Proxy API
 api = Proxy
+
+checkBasicAuth :: T.Text -> ShortText -> BasicAuthCheck User
+checkBasicAuth user passhash = BasicAuthCheck $ \authData ->
+  let username =  decodeUtf8 (basicAuthUsername authData)
+      password = basicAuthPassword authData
+  in
+    case user == username of
+      False -> return NoSuchUser
+      True -> case verifyEncoded passhash password of
+                 Argon2Ok -> return $ Authorized $ User username password
+                 _ -> return Unauthorized
+
 
 initDb :: FilePath -> IO ()
 initDb dbFile = withConnection dbFile $ \conn ->
@@ -36,12 +59,13 @@ initDb dbFile = withConnection dbFile $ \conn ->
 
 -- | TODO: readerT
 server :: FilePath -> Server API
-server dbf = randomQuote dbf :<|> listQuotes dbf :<|> randomQuote dbf :<|> randomQuote dbf :<|> addKoReader dbf
+server dbf = randomQuote dbf :<|> listQuotes dbf :<|> randomQuote dbf :<|> randomQuote dbf :<|> (\_ -> addKoReader dbf)
+
 -- | API begins here
 randomQuote :: FilePath -> Handler Quote
 randomQuote db = do
-  qts <- (liftIO $ withConnection db $ \c -> query_ c qry)
-  case (length qts) of
+  qts <- liftIO $ withConnection db $ \c -> query_ c qry
+  case length qts of
     0 -> undefined
     _ -> pure (head qts)
   where
@@ -60,7 +84,9 @@ addKoReader db hl = do
     qts = KO.parse hl
 
 runApp :: AppConfig -> IO ()
-runApp c = run (appPort c) (serve api $ server (appDbFile c))
+runApp c = run (appPort c) (serveWithContext api ctx $ server (appDbFile c))
+  where
+    ctx = checkBasicAuth (appUser c) (fromText $ appPassHash c):. EmptyContext
 
 main :: IO ()
 main = do

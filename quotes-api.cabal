@@ -111,7 +111,9 @@ executable quotes-api
         quotes-api,
         servant-blaze,
         optparse-applicative,
-
+        argon2,
+        text-short,
+        bytestring,
     -- Directories containing source files.
     hs-source-dirs:   app
 
