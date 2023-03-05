@@ -10,6 +10,7 @@ pkgs.haskellPackages.developPackage {
         ghc
         haskell-language-server
         zlib
+        cabal-plan
       ]);
 }
 

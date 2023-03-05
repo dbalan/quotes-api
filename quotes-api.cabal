@@ -60,8 +60,8 @@ library
 
     -- Modules exported by the library.
     exposed-modules:  Api.Types,
-                      Parsers.KOReader
-
+                      Parsers.KOReader,
+                      Config,
     -- Modules included in this library but not exported.
     -- other-modules:
 
@@ -76,6 +76,9 @@ library
                       bytestring,
                       unordered-containers,
                       sqlite-simple,
+                      blaze-markup,
+                      blaze-html,
+                      optparse-applicative,
     -- Directories containing source files.
     hs-source-dirs:   lib
 
@@ -105,7 +108,9 @@ executable quotes-api
         warp,
         aeson,
         deriving-aeson,
-        quotes-api
+        quotes-api,
+        servant-blaze,
+        optparse-applicative,
 
     -- Directories containing source files.
     hs-source-dirs:   app

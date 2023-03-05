@@ -9,22 +9,18 @@ import Network.Wai.Handler.Warp
 import Data.Proxy
 import Servant
 import Control.Monad.IO.Class
+import Servant.HTML.Blaze
 
 import Api.Types
 import qualified Parsers.KOReader as KO
+import Config
+import Options.Applicative
 
-main :: IO ()
-main = do
-  putStrLn "Hello, Haskell!"
-  let dbfile = "quotes.db"
-  initDb dbfile
-  runApp dbfile
-
-
-type API = "quotes" :> Get '[JSON] [Quote]
+type API = Get '[HTML] Quote
+         :<|> "quotes" :> Get '[JSON] [Quote]
          :<|> "quote" :> "random" :> Get '[JSON] Quote
+         :<|> "today" :> Get '[HTML] Quote
          :<|> "koreader" :> ReqBody '[JSON] KO.KoHighlight :> Post '[JSON] NoContent
-
 api :: Proxy API
 api = Proxy
 
@@ -40,7 +36,7 @@ initDb dbFile = withConnection dbFile $ \conn ->
 
 -- | TODO: readerT
 server :: FilePath -> Server API
-server dbf = listQuotes dbf :<|> randomQuote dbf :<|> addKoReader dbf
+server dbf = randomQuote dbf :<|> listQuotes dbf :<|> randomQuote dbf :<|> randomQuote dbf :<|> addKoReader dbf
 -- | API begins here
 randomQuote :: FilePath -> Handler Quote
 randomQuote db = do
@@ -63,5 +59,12 @@ addKoReader db hl = do
     qry = [sql|INSERT INTO quotes VALUES (?,?,?,?,?,?);|]
     qts = KO.parse hl
 
-runApp :: FilePath -> IO ()
-runApp dbfile = run 8081 (serve api $ server dbfile)
+runApp :: AppConfig -> IO ()
+runApp c = run (appPort c) (serve api $ server (appDbFile c))
+
+main :: IO ()
+main = do
+  conf <- execParser parserOpts
+  putStrLn $ "running with conf" <> show conf
+  initDb (appDbFile conf)
+  runApp conf
