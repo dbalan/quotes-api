@@ -1,11 +1,14 @@
 # Quotes API
 
-Personal, bare bones [readwise] alternative. 
+Personal, bare bones [readwise] alternative.
+
+<http://quotes.dbalan.in>
 
 Have 
-- [ ] Parsers
-  - Read from kindle
-- [ ] Minimal API
+- Parsers
+  - [ ] Read from kindle
+  - [x] Read from KOReader
+- [x] Minimal API
   - Expose random-quote API
-- [ ] Minimal UI
+- [x] Minimal UI
   - Expose a webpage with random and whole quotes
