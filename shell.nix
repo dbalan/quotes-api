@@ -1,16 +1,23 @@
-let
-  pkgs = import <unstable> { }; # pin the channel to ensure reproducibility!
-in
-pkgs.haskellPackages.developPackage {
-  root = ./.;
-  modifier = drv:
-    pkgs.haskell.lib.addBuildTools drv (with pkgs.haskellPackages;
-      [ cabal-install
-        ghcid
-        ghc
-        haskell-language-server
-        zlib
-        cabal-plan
-      ]);
-}
+{ pkgs ? import <unstable> {}
+}:
 
+pkgs.stdenv.mkDerivation rec {
+  name = "quotes-api";
+
+  nativeBuildInputs = [
+  ];
+
+  buildInputs = [
+    pkgs.zlib
+    pkgs.ghc
+    pkgs.cabal-install
+    pkgs.haskellPackages.ghcid
+    pkgs.haskellPackages.cabal-plan
+    pkgs.haskellPackages.haskell-language-server
+  ];
+
+  shellHook = ''
+    export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath buildInputs}:$LD_LIBRARY_PATH
+    export LANG=en_US.UTF-8
+  '';
+}

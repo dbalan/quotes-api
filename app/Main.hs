@@ -11,13 +11,15 @@ import Servant
 import Control.Monad.IO.Class
 import Servant.HTML.Blaze
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Crypto.Argon2
 import Data.Text.Short (fromText, ShortText)
 import Data.ByteString (ByteString)
+import Data.ByteString.Lazy (fromStrict)
 
 import Api.Types
 import qualified Parsers.KOReader as KO
+import qualified Parsers.Readwise as RW
 import Config
 import Options.Applicative
 
@@ -30,7 +32,8 @@ type API = Get '[HTML] Quote
          :<|> "quotes" :> Get '[JSON] [Quote]
          :<|> "quote" :> "random" :> Get '[JSON] Quote
          :<|> "today" :> Get '[HTML] Quote
-         :<|> BasicAuth "update data" User :> ("koreader" :> ReqBody '[JSON] KO.KoHighlight :> Post '[JSON] NoContent)
+         :<|> BasicAuth "update data" User :> (    "koreader" :> ReqBody '[JSON] KO.KoHighlight :> Post '[JSON] NoContent
+                                              :<|> "readwise" :> ReqBody '[PlainText] T.Text :> Post '[JSON] NoContent)
 
 api :: Proxy API
 api = Proxy
@@ -59,7 +62,11 @@ initDb dbFile = withConnection dbFile $ \conn ->
 
 -- | TODO: readerT
 server :: FilePath -> Server API
-server dbf = randomQuote dbf :<|> listQuotes dbf :<|> randomQuote dbf :<|> randomQuote dbf :<|> (\_ -> addKoReader dbf)
+server dbf = randomQuote dbf
+      :<|> listQuotes dbf
+      :<|> randomQuote dbf
+      :<|> randomQuote dbf
+      :<|> (\_ -> (addKoReader dbf :<|> addReadwise dbf))
 
 -- | API begins here
 randomQuote :: FilePath -> Handler Quote
@@ -82,6 +89,14 @@ addKoReader db hl = do
   where
     qry = [sql|INSERT INTO quotes VALUES (?,?,?,?,?,?);|]
     qts = KO.parse hl
+
+addReadwise :: FilePath -> T.Text -> Handler NoContent
+addReadwise db hl = do
+  let
+    qts = RW.parse (fromStrict $ encodeUtf8 hl)
+  liftIO $ print $ show qts
+  pure NoContent
+
 
 runApp :: AppConfig -> IO ()
 runApp c = run (appPort c) (serveWithContext api ctx $ server (appDbFile c))
