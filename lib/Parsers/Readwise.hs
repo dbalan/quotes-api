@@ -34,16 +34,18 @@ instance FromNamedRecord RwHighlight where
                                     <*> m .: "Highlighted at"
                                     <*> m .: "Document tags"
 
-parseDocument :: ByteString -> [RwHighlight]
+parseDocument :: ByteString -> Either String [RwHighlight]
 parseDocument d = case decodeByName d of
-  Left _ -> []
-  Right (_, va) -> toList va
+  Left err -> Left err
+  Right (_, va) -> Right $ toList va
 
-parse :: ByteString -> [Quote]
-parse d = fmap (\r -> Quote { qQuote = rhHightlight r
+parse :: ByteString -> Either String [Quote]
+parse d = case parseDocument d of
+  Left err -> Left err
+  Right rw -> Right $ fmap (\r -> Quote { qQuote = rhHightlight r
                                   , qAuthor = rhAuthor r
                                   , qTitle = rhTitle r
                                   , qPage = rhLocation r
                                   , qChapter = Nothing
                                   , qCreatedOn = Nothing
-                                }) (parseDocument d)
+                                }) rw
