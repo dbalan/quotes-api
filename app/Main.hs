@@ -22,6 +22,7 @@ import qualified Parsers.KOReader as KO
 import qualified Parsers.Readwise as RW
 import Config
 import Options.Applicative
+import Database
 
 data User = User
   { username :: T.Text
@@ -50,16 +51,6 @@ checkBasicAuth user passhash = BasicAuthCheck $ \authData ->
                  _ -> return Unauthorized
 
 
-initDb :: FilePath -> IO ()
-initDb dbFile = withConnection dbFile $ \conn ->
-  execute_ conn
-    [sql|CREATE TABLE IF NOT EXISTS quotes ( quote text non null
-                                           , author text
-                                           , title text
-                                           , page text
-                                           , chapter text
-                                           , created_on integer);|]
-
 -- | TODO: readerT
 server :: FilePath -> Server API
 server dbf = randomQuote dbf
@@ -83,12 +74,8 @@ listQuotes db = liftIO $ withConnection db $ \conn -> query_ conn [sql|SELECT * 
 
 addKoReader :: FilePath -> KO.KoHighlight -> Handler NoContent
 addKoReader db hl = do
-  liftIO $ withConnection db $ \c ->
-    executeMany c qry qts
+  liftIO $ insertQts db (KO.parse hl)
   pure NoContent
-  where
-    qry = [sql|INSERT INTO quotes VALUES (?,?,?,?,?,?);|]
-    qts = KO.parse hl
 
 addReadwise :: FilePath -> T.Text -> Handler NoContent
 addReadwise db hl = do

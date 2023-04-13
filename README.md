@@ -7,7 +7,7 @@ Personal, bare bones [readwise] alternative.
 Have 
 - Parsers
   - [-] Read from kindle
-  - [ ] Read from readwise
+  - [x] Read from readwise
   - [x] Read from KOReader
 - [x] Minimal API
   - Expose random-quote API
