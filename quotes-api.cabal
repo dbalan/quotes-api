@@ -71,7 +71,7 @@ library
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.16.3.0,
+    build-depends:    base,
                       text,
                       aeson,
                       deriving-aeson,
@@ -104,10 +104,10 @@ executable quotes-api
 
     -- Other library packages from which modules are imported.
     build-depends:
-        base ^>=4.16.3.0,
-        sqlite-simple ^>=0.4.18.0,
-        text ^>=1.2.5.0,
-        servant-server ^>=0.19.1,
+        base,
+        sqlite-simple,
+        text,
+        servant-server,
         wai,
         warp,
         aeson,
@@ -115,7 +115,7 @@ executable quotes-api
         quotes-api,
         servant-blaze,
         optparse-applicative,
-        argon2 >= 1.3.0,
+       --  argon2,
         text-short,
         bytestring,
         QuickCheck,
@@ -186,5 +186,5 @@ test-suite quotes-api-test
 
     -- Test dependencies.
     build-depends:
-        base ^>=4.16.3.0,
+        base,
         quotes-api

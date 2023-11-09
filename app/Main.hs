@@ -11,8 +11,7 @@ import Servant
 import Control.Monad.IO.Class
 import Servant.HTML.Blaze
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
-import Crypto.Argon2
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Text.Short (fromText, ShortText)
 import Data.ByteString (ByteString)
 
@@ -36,7 +35,7 @@ type API = Get '[HTML] Quote
 
 api :: Proxy API
 api = Proxy
-
+{-
 checkBasicAuth :: T.Text -> ShortText -> BasicAuthCheck User
 checkBasicAuth user passhash = BasicAuthCheck $ \authData ->
   let u =  decodeUtf8 (basicAuthUsername authData)
@@ -47,6 +46,20 @@ checkBasicAuth user passhash = BasicAuthCheck $ \authData ->
       True -> case verifyEncoded passhash p of
                  Argon2Ok -> return $ Authorized $ User u p
                  _ -> return Unauthorized
+
+-}
+checkBasicAuth :: T.Text -> ShortText -> BasicAuthCheck User
+checkBasicAuth _ _ = BasicAuthCheck $ \_ -> return NoSuchUser
+
+initDb :: FilePath -> IO ()
+initDb dbFile = withConnection dbFile $ \conn ->
+  execute_ conn
+    [sql|CREATE TABLE IF NOT EXISTS quotes ( quote text non null
+                                           , author text
+                                           , title text
+                                           , page text
+                                           , chapter text
+                                           , created_on integer);|]
 
 -- | TODO: readerT
 server :: FilePath -> Server API
