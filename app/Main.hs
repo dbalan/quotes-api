@@ -11,55 +11,24 @@ import Servant
 import Control.Monad.IO.Class
 import Servant.HTML.Blaze
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Data.Text.Short (fromText, ShortText)
-import Data.ByteString (ByteString)
+import Data.Text.Encoding (encodeUtf8)
+import Data.ByteString.Lazy (fromStrict)
 
 import Api.Types
 import qualified Parsers.KOReader as KO
+import qualified Parsers.Readwise as RW
 import Config
 import Options.Applicative
 import Database
-
-data User = User
-  { username :: T.Text
-  , password :: ByteString
-  } deriving (Show, Eq)
 
 type API = Get '[HTML] Quote
          :<|> "quotes" :> Get '[JSON] [Quote]
          :<|> "quote" :> "random" :> Get '[JSON] Quote
          :<|> "today" :> Get '[HTML] Quote
-         :<|> BasicAuth "update data" User :> "koreader" :> ReqBody '[JSON] KO.KoHighlight :> Post '[JSON] NoContent
 
 
 api :: Proxy API
 api = Proxy
-{-
-checkBasicAuth :: T.Text -> ShortText -> BasicAuthCheck User
-checkBasicAuth user passhash = BasicAuthCheck $ \authData ->
-  let u =  decodeUtf8 (basicAuthUsername authData)
-      p = basicAuthPassword authData
-  in
-    case user == u of
-      False -> return NoSuchUser
-      True -> case verifyEncoded passhash p of
-                 Argon2Ok -> return $ Authorized $ User u p
-                 _ -> return Unauthorized
-
--}
-checkBasicAuth :: T.Text -> ShortText -> BasicAuthCheck User
-checkBasicAuth _ _ = BasicAuthCheck $ \_ -> return NoSuchUser
-
-initDb :: FilePath -> IO ()
-initDb dbFile = withConnection dbFile $ \conn ->
-  execute_ conn
-    [sql|CREATE TABLE IF NOT EXISTS quotes ( quote text non null
-                                           , author text
-                                           , title text
-                                           , page text
-                                           , chapter text
-                                           , created_on integer);|]
 
 -- | TODO: readerT
 server :: FilePath -> Server API
@@ -67,7 +36,6 @@ server dbf = randomQuote dbf
       :<|> listQuotes dbf
       :<|> randomQuote dbf
       :<|> randomQuote dbf
-      :<|> const (addKoReader dbf)
 
 -- | API begins here
 randomQuote :: FilePath -> Handler Quote
@@ -87,10 +55,15 @@ addKoReader db hl = do
   liftIO $ insertQts db (KO.parse hl)
   pure NoContent
 
+addReadwise :: FilePath -> T.Text -> Handler NoContent
+addReadwise db hl = do
+  let
+    qts = RW.parse (fromStrict $ encodeUtf8 hl)
+  liftIO $ print $ show qts
+  pure NoContent
+
 runApp :: AppConfig -> IO ()
-runApp c = run (appPort c) (serveWithContext api ctx $ server (appDbFile c))
-  where
-    ctx = checkBasicAuth (appUser c) (fromText $ appPassHash c):. EmptyContext
+runApp c = run (appPort c) (serve api $ server (appDbFile c))
 
 main :: IO ()
 main = do

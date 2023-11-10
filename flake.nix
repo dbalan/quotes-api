@@ -33,6 +33,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             haskellPackages.haskell-language-server # you must build it with your ghc to work
+            haskellPackages.hoogle
             ghcid
             hlint
             ghc

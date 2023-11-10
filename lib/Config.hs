@@ -7,13 +7,10 @@ module Config
   ) where
 
 import Options.Applicative
-import Data.Text (Text)
 
 data AppConfig = AppConfig
   { appPort :: Int
   , appDbFile :: FilePath
-  , appUser :: Text
-  , appPassHash :: Text
   } deriving (Show, Eq)
 
 appConfig :: Parser AppConfig
@@ -30,15 +27,6 @@ appConfig = AppConfig
      <> showDefault
      <> value "quotes.db"
      <> metavar "TARGET")
-    <*> strOption
-     ( long "user"
-     <> help "basic auth user (for writes)"
-     <> showDefault
-     <> value "root"
-     <> metavar "USER")
-    <*> strOption
-     ( long "password"
-     <> help "password hash for basic auth user, generate with argon2")
 
 parserOpts :: ParserInfo AppConfig
 parserOpts =  info (appConfig <**> helper)
