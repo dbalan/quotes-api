@@ -1,5 +1,3 @@
-module Main where
-
 import Options.Applicative
 import qualified Data.ByteString.Lazy as BSL
 

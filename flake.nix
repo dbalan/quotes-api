@@ -34,6 +34,8 @@
           buildInputs = with pkgs; [
             haskellPackages.haskell-language-server # you must build it with your ghc to work
             ghcid
+            hlint
+            ghc
             cabal-install
           ];
           inputsFrom =
